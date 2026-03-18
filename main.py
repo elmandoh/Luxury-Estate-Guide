@@ -24,7 +24,7 @@ def generate_viral_content():
     selected_app = random.choice(APPS)
     
     # أوامر دقيقة للموديل لضمان الطول والجودة وتجنب الفشل
-    prompt = f"""Write a professional 700-word SEO viral article for a US audience about 'High-ROI Real Estate Opportunities 2026'.
+    prompt = f"""Write a professional 400-word SEO viral article for a US audience about 'High-ROI Real Estate Opportunities 2026'.
     Format strictly in HTML. Include:
     - Viral H1 title with a hashtag (e.g., #Wealth2026).
     - Detailed sections (H2) about market trends, Gold/Silver prices, and top stock picks.
@@ -53,7 +53,7 @@ def generate_viral_content():
 
 def send_to_blogger(content):
     # تم تقليل حد الفحص قليلاً لضمان مرور المقالات الجيدة (600 حرف كحد أدنى للبدء)
-    if not content or len(content) < 600:
+    if not content or len(content) < 300:
         print("❌ AI Content too short. Retrying in next schedule.")
         return
 
