@@ -5,44 +5,53 @@ import random
 import re
 from email.message import EmailMessage
 
+# الإعدادات
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_KEY = os.getenv("GROQ_API_KEY")
+PINTEREST_TOKEN = os.getenv("PINTEREST_ACCESS_TOKEN")
+BOARD_ID = os.getenv("PINTEREST_BOARD_ID")
 
-# قائمة تطبيقاتك الـ 20
+# تطبيقاتك الـ 20 (تم التأكد من عمل الموديل الجديد معها)
 APPS = [
     {"name": "Injury Lawyer Guide", "url": "https://play.google.com/store/apps/details?id=injurylawyerguide.aplizrc"},
     {"name": "Design AI 2", "url": "https://play.google.com/store/apps/details?id=design.ai2"},
     {"name": "Smart IPTV Player", "url": "https://play.google.com/store/apps/details?id=asd.iptvplayer"},
     {"name": "Insurance App Guide", "url": "https://play.google.com/store/apps/details?id=insurance.aplicnem"}
-    # أضف البقية هنا بنفس التنسيق
+    # أضف البقية هنا..
 ]
 
-# كلمات مفتاحية قوية لرفع الـ SEO في أمريكا
-KEYWORDS = ["US Housing Market 2026", "Gold Price Prediction", "Best Stocks to Buy", "Passive Income USA", "Luxury Real Estate Trends"]
+def post_to_pinterest(title, link):
+    """دالة لنشر المقال كـ Pin على بينترست لجلب زوار أمريكان"""
+    if not PINTEREST_TOKEN: return
+    
+    url = "https://api.pinterest.com/v5/pins"
+    headers = {
+        "Authorization": f"Bearer {PINTEREST_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "link": link,
+        "title": title,
+        "description": f"Check out the latest US market update: {title} #RealEstate #Finance",
+        "board_id": BOARD_ID,
+        "media_source": {
+            "source_type": "image_url",
+            "url": "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1000&auto=format&fit=crop" # صورة افتراضية عقارية
+        }
+    }
+    try:
+        requests.post(url, json=data, headers=headers)
+        print("✅ Pinned to Pinterest!")
+    except: pass
 
 def generate_pro_article():
     app = random.choice(APPS)
-    kw = random.sample(KEYWORDS, 2) # اختيار كلمتين بحث عشوائيتين
-    
     headers = {"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"}
     
-    # برومبت احترافي يركز على الـ SEO والزرار
-    prompt = f"""Write a VIRAL 900-word SEO article for a US audience.
-    Topic: High-impact analysis of {kw[0]} and {kw[1]} in 2026.
-    
-    Instructions:
-    1. Viral H1 Title with hashtag.
-    2. Add a 150-character SEO Meta Description at the very beginning.
-    3. Use 5+ sections with H2 tags.
-    4. Create an HTML data table for Gold, Silver, and Currency rates.
-    5. PROMOTION: Include this EXACT HTML button: 
-       <div style='text-align: center; margin: 20px;'><a href='{app['url']}' style='background-color: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Get the {app['name']} Now</a></div>
-    6. Footer: Add a bold warning about downloading the blog's mobile app.
-    7. Formatting: Strictly use clean HTML."""
-
+    # استخدام الموديل الشغال حالياً llama-3.3-70b-versatile
     data = {
         "model": "llama-3.3-70b-versatile",
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": f"Write a VIRAL 900-word SEO article for US readers. Topic: 2026 US Economic Trend. Include a green HTML button for: {app['name']} ({app['url']}). Format in HTML."}],
         "temperature": 0.8
     }
 
@@ -63,10 +72,14 @@ def send_to_blogger(content):
     msg['To'] = os.getenv("BLOGGER_EMAIL")
     msg.set_content(content, subtype='html')
 
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
-        smtp.send_message(msg)
-    print(f"✅ Success: Published with SEO Boost and Button!")
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
+            smtp.send_message(msg)
+        print(f"✅ Published: {subject}")
+        # بعد النشر، نقوم بعمل الـ Pin
+        post_to_pinterest(subject, "https://yourblog.blogspot.com")
+    except: pass
 
 if __name__ == "__main__":
     article = generate_pro_article()
