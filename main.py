@@ -5,61 +5,72 @@ import random
 import re
 from email.message import EmailMessage
 
-# استخدام موديل Qwen المتطور لضمان سرعة الاستجابة وكفاءة المحتوى
-API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-72B-Instruct"
-headers = {"Authorization": f"Bearer {os.getenv('HF_TOKEN')}"}
+# إعدادات Groq (تأكد من وضع GROQ_API_KEY في السيكرتس)
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_KEY = os.getenv("GROQ_API_KEY")
 
-# قائمة التطبيقات الكاملة (سيتم اختيار واحد عشوائياً في كل مرة) 
+# قائمة تطبيقاتك الـ 20 (سيختار منها واحد عشوائي لكل مقال) [cite: 1, 2, 3]
 APPS = [
-    {"name": "Smart IPTV Player", "url": "https://play.google.com/store/apps/details?id=asd.iptvplayer"},
-    {"name": "ASD 26", "url": "https://play.google.com/store/apps/details?id=com.eslamegyp.asd26"},
     {"name": "Injury Lawyer Guide", "url": "https://play.google.com/store/apps/details?id=injurylawyerguide.aplizrc"},
     {"name": "Design AI 2", "url": "https://play.google.com/store/apps/details?id=design.ai2"},
     {"name": "Insurance App Guide", "url": "https://play.google.com/store/apps/details?id=insurance.aplicnem"},
-    {"name": "Quick ToolsHub", "url": "https://play.google.com/store/apps/details?id=quick.toolshub"}
-    # يمكنك إضافة بقية القائمة هنا 
+    {"name": "Smart IPTV Player", "url": "https://play.google.com/store/apps/details?id=asd.iptvplayer"},
+    {"name": "Quick ToolsHub", "url": "https://play.google.com/store/apps/details?id=quick.toolshub"},
+    {"name": "ASD 26", "url": "https://play.google.com/store/apps/details?id=com.eslamegyp.asd26"},
+    {"name": "NoteEye", "url": "https://play.google.com/store/apps/details?id=noteeye.ayzi"}
+    # يمكنك إضافة بقية الروابط هنا [cite: 1, 2, 3]
 ]
 
 def generate_viral_content():
     selected_app = random.choice(APPS)
     
-    # أوامر دقيقة للموديل لضمان الطول والجودة وتجنب الفشل
-    prompt = f"""Write a professional 400-word SEO viral article for a US audience about 'High-ROI Real Estate Opportunities 2026'.
-    Format strictly in HTML. Include:
-    - Viral H1 title with a hashtag (e.g., #Wealth2026).
-    - Detailed sections (H2) about market trends, Gold/Silver prices, and top stock picks.
-    - Naturally recommend this app as a professional tool: {selected_app['name']} ({selected_app['url']}).
-    - A 'Big Question' at the end to encourage comments.
-    - Footer: Alert to download 'Luxury Estate Guide' mobile app for updates.
-    Make it expert, persuasive, and exclusive."""
-
-    payload = {
-        "inputs": prompt,
-        "parameters": {"max_new_tokens": 1500, "temperature": 0.8, "return_full_text": False}
+    headers = {
+        "Authorization": f"Bearer {GROQ_KEY}",
+        "Content-Type": "application/json"
     }
     
+    # البرومبت الجديد: حددنا له النيتش وتركنا له اختيار الموضوع الساخن
+    data = {
+        "model": "llama3-70b-8192",
+        "messages": [
+            {
+                "role": "system", 
+                "content": "You are a top-tier US financial journalist. Your goal is to find a trending, high-traffic niche topic in US Real Estate, Luxury Living, or US Economy and write about it to drive viral clicks."
+            },
+            {
+                "role": "user", 
+                "content": f"""Generate a unique, viral SEO blog post based on a CURRENT hot topic in the US Real Estate or Economy niche.
+                
+                Strict Requirements:
+                1. Viral Title: Short, punchy, attracts US readers, includes a trending hashtag. (Wrap in <h1>)
+                2. Length: Minimum 800 words, organized into professional sections with <h2>.
+                3. App Promotion: Naturally recommend this app as a helpful tool: {selected_app['name']} ({selected_app['url']}).
+                4. Economic Brief: Include a dedicated section with current Gold, Silver, and Currency trends + a stock/crypto recommendation.
+                5. Engagement: End with a provocative question and ask readers to comment.
+                6. Footer: Add a bold notice: 'Download the Luxury Estate Guide app on your phone for instant real estate alerts and economic tips.'
+                
+                Format everything in clean HTML."""
+            }
+        ],
+        "temperature": 1.0, # زيادة العشوائية لمنع التكرار تماماً
+        "max_tokens": 2000
+    }
+
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
-        result = response.json()
-        
-        if isinstance(result, list) and 'generated_text' in result[0]:
-            return result[0]['generated_text'].strip()
-        elif isinstance(result, dict) and 'generated_text' in result:
-            return result['generated_text'].strip()
-        return None
+        response = requests.post(API_URL, headers=headers, json=data, timeout=60)
+        return response.json()['choices'][0]['message']['content']
     except Exception as e:
-        print(f"Error calling AI: {e}")
+        print(f"Error: {e}")
         return None
 
 def send_to_blogger(content):
-    # تم تقليل حد الفحص قليلاً لضمان مرور المقالات الجيدة (600 حرف كحد أدنى للبدء)
-    if not content or len(content) < 300:
-        print("❌ AI Content too short. Retrying in next schedule.")
+    if not content or len(content) < 1500: # التأكد من جودة وطول المقال
+        print("❌ Content too short or failed. Skipping.")
         return
 
-    # محاولة استخراج العنوان
-    title_search = re.search('<h1>(.*?)</h1>', content)
-    subject = title_search.group(1) if title_search else f"Exclusive US Market Update {random.randint(100, 999)}"
+    # استخراج العنوان ليكون موضوع الإيميل
+    title_match = re.search('<h1>(.*?)</h1>', content)
+    subject = title_match.group(1) if title_match else f"US Market Alert {random.randint(100, 999)}"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -71,9 +82,9 @@ def send_to_blogger(content):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
             smtp.send_message(msg)
-        print(f"✅ Article Published: {subject}")
+        print(f"✅ Viral Article Published: {subject}")
     except Exception as e:
-        print(f"❌ Email Error: {e}")
+        print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
     article = generate_viral_content()
