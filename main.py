@@ -5,52 +5,62 @@ import random
 import re
 from email.message import EmailMessage
 
-# الإعدادات
+# الإعدادات المحدثة لعام 2026
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_KEY = os.getenv("GROQ_API_KEY")
 
-# لستة تطبيقاتك الـ 20 من ملفك [cite: 1, 2, 3]
+# القائمة الكاملة لتطبيقاتك الـ 20 من ملفك 
 APPS = [
-    {"name": "Injury Lawyer Guide", "url": "https://play.google.com/store/apps/details?id=injurylawyerguide.aplizrc"},
-    {"name": "Design AI 2", "url": "https://play.google.com/store/apps/details?id=design.ai2"},
-    {"name": "Insurance App Guide", "url": "https://play.google.com/store/apps/details?id=insurance.aplicnem"},
     {"name": "Smart IPTV Player", "url": "https://play.google.com/store/apps/details?id=asd.iptvplayer"},
-    {"name": "Quick ToolsHub", "url": "https://play.google.com/store/apps/details?id=quick.toolshub"}
+    {"name": "ASD 26", "url": "https://play.google.com/store/apps/details?id=com.eslamegyp.asd26"},
+    {"name": "Injury Lawyer Guide", "url": "https://play.google.com/store/apps/details?id=injurylawyerguide.aplizrc"},
+    {"name": "Quick ToolsHub", "url": "https://play.google.com/store/apps/details?id=quick.toolshub"},
+    {"name": "Smart IPTV Viewer", "url": "https://play.google.com/store/apps/details?id=smart.iptvviewer"},
+    {"name": "Fast Lite Web Browser", "url": "https://play.google.com/store/apps/details?id=fast.litewebbrowser"},
+    {"name": "NoteEye", "url": "https://play.google.com/store/apps/details?id=noteeye.ayzi"},
+    {"name": "QR App Muq", "url": "https://play.google.com/store/apps/details?id=qr.appmuq"},
+    {"name": "K-Cafe Finder", "url": "https://play.google.com/store/apps/details?id=kcafe.finder"},
+    {"name": "Design AI 2", "url": "https://play.google.com/store/apps/details?id=design.ai2"},
+    {"name": "BPS Productivity", "url": "https://play.google.com/store/apps/details?id=ap3756437.bps"},
+    {"name": "TV App Ape", "url": "https://play.google.com/store/apps/details?id=tv.appape"},
+    {"name": "QR Scanner 377", "url": "https://play.google.com/store/apps/details?id=qr.scanner377"},
+    {"name": "SmartSync Hub", "url": "https://play.google.com/store/apps/details?id=smartsync.hub"},
+    {"name": "ConnectSphere", "url": "https://play.google.com/store/apps/details?id=connectsphere.aczh"},
+    {"name": "Insurance App Guide", "url": "https://play.google.com/store/apps/details?id=insurance.aplicnem"},
+    {"name": "Digital CV Share", "url": "https://play.google.com/store/apps/details?id=digital.cvshare"},
+    {"name": "Al Hilal Fans", "url": "https://play.google.com/store/apps/details?id=al.hilalfans"},
+    {"name": "Toolify Daily Monitor", "url": "https://play.google.com/store/apps/details?id=toolify.dailytoolsusagemonitor"},
+    {"name": "DHO Productivity", "url": "https://play.google.com/store/apps/details?id=app3514831.dho"}
 ]
 
-def generate_article():
+def generate_viral_article():
     app = random.choice(APPS)
     headers = {"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"}
     
-    # طلب مقال فيرال طويل بشروطك [cite: 1, 3]
+    # استخدام الموديل الجديد لضمان العمل
     data = {
-        "model": "llama3-8b-8192",
-        "messages": [{
-            "role": "user",
-            "content": f"Write a VIRAL 800-word SEO article for US readers about trending 2026 US Real Estate or Economy. Use HTML. Include Gold/Silver prices. Promote this app: {app['name']} ({app['url']}). End with a question. Footer: Download 'Luxury Estate Guide' for alerts."
-        }],
-        "temperature": 0.8
+        "model": "llama-3.3-70b-versatile", 
+        "messages": [
+            {"role": "system", "content": "You are a US Economy & Real Estate viral journalist. Write uniquely."},
+            {"role": "user", "content": f"Find a trending US Real Estate topic for March 2026. Write a VIRAL 800-word SEO article in HTML. Include Gold/Silver prices. Promote this app naturally: {app['name']} ({app['url']}). End with a question. Footer: Download 'Luxury Estate Guide' for alerts."}
+        ],
+        "temperature": 0.9
     }
 
     try:
-        response = requests.post(GROQ_API_URL, headers=headers, json=data, timeout=60)
+        response = requests.post(GROQ_API_URL, headers=headers, json=data, timeout=90)
         res_json = response.json()
-        if 'choices' in res_json:
-            return res_json['choices'][0]['message']['content']
-        else:
-            print(f"API Error Response: {res_json}") # عشان نعرف السبب لو فشل
-            return None
+        return res_json['choices'][0]['message']['content']
     except Exception as e:
-        print(f"Connection Error: {e}")
+        print(f"Error: {e}")
         return None
 
-def send_mail(content):
-    if not content or len(content) < 500:
-        print("❌ Content generation failed or too short.")
+def send_to_blogger(content):
+    if not content or len(content) < 1500: # حماية من المحتوى الضعيف
         return
 
     title_match = re.search('<h1>(.*?)</h1>', content)
-    subject = title_match.group(1) if title_match else "US Economic & Real Estate Viral Update"
+    subject = title_match.group(1) if title_match else f"Viral Market Update {random.randint(100, 999)}"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -58,14 +68,11 @@ def send_mail(content):
     msg['To'] = os.getenv("BLOGGER_EMAIL")
     msg.set_content(content, subtype='html')
 
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
-            smtp.send_message(msg)
-        print(f"✅ SUCCESS: Published {subject}")
-    except Exception as e:
-        print(f"❌ Mail Error: {e}")
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
+        smtp.send_message(msg)
+    print(f"✅ SUCCESS: {subject}")
 
 if __name__ == "__main__":
-    article = generate_article()
-    send_mail(article)
+    article = generate_viral_article()
+    send_to_blogger(article)
