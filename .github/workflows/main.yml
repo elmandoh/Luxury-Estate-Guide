@@ -30,6 +30,10 @@ jobs:
           BLOGGER_EMAIL: ${{ secrets.BLOGGER_EMAIL }}
         run: python main.py
 
+      - name: Install dependencies
+        run: |
+          pip install requests atproto
+
       - name: Run Share Script (Only if new post exists)
         env:
           BSKY_HANDLE_1: ${{ secrets.BSKY_HANDLE_1 }}
