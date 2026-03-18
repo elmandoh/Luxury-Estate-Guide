@@ -1,63 +1,55 @@
 import os
 import requests
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
-# إعدادات Bluesky من GitHub Secrets
+# الإعدادات من السيكرتس
 BSKY_ACCOUNTS = [
     {"handle": os.getenv("BSKY_HANDLE_1"), "password": os.getenv("BSKY_PASSWORD_1")},
     {"handle": os.getenv("BSKY_HANDLE_2"), "password": os.getenv("BSKY_PASSWORD_2")}
 ]
 
-# رابط التغذية (RSS) لمدونتك
 BLOG_RSS_URL = "https://luxuryestateguide.blogspot.com/feeds/posts/default?alt=rss"
+CACHE_FILE = "last_post.txt"
 
-def get_latest_blog_post():
-    """جلب عنوان ورابط آخر مقال تم نشره فعلياً على المدونة"""
+def get_latest_post():
     try:
         response = requests.get(BLOG_RSS_URL, timeout=30)
-        # استخراج أول مقال من الـ RSS
-        import xml.etree.ElementTree as ET
         root = ET.fromstring(response.content)
         item = root.find('.//item')
         if item is not None:
-            title = item.find('title').text
-            link = item.find('link').text
-            return title, link
-    except Exception as e:
-        print(f"Error fetching RSS: {e}")
-    return None, None
+            return item.find('title').text, item.find('link').text
+    except: return None, None
 
-def post_to_bluesky(title, link):
-    """نشر تفاصيل المقال الجديد على حسابات Bluesky"""
+def post_to_bsky(title, link):
     for acc in BSKY_ACCOUNTS:
-        if not acc['handle'] or not acc['password']:
-            continue
+        if not acc['handle'] or not acc['password']: continue
         try:
-            # 1. تسجيل الدخول
             session = requests.post("https://bsky.social/xrpc/com.atproto.server.createSession",
                                     json={"identifier": acc['handle'], "password": acc['password']}).json()
-            headers = {"Authorization": "Bearer " + session['accessJwt']}
-            
-            # 2. إنشاء المنشور
-            post_text = f"🔥 New Update: {title}\n\nRead the full article here:\n{link}\n\n#RealEstate #USA #Economy"
+            headers = {"Authorization": f"Bearer {session['accessJwt']}"}
             post_data = {
-                "repo": session['did'],
-                "collection": "app.bsky.feed.post",
+                "repo": session['did'], "collection": "app.bsky.feed.post",
                 "record": {
-                    "text": post_text,
+                    "text": f"🚨 New Viral Post: {title}\n\nRead more:\n{link}",
                     "createdAt": datetime.utcnow().isoformat() + "Z"
                 }
             }
             requests.post("https://bsky.social/xrpc/com.atproto.repo.createRecord", json=post_data, headers=headers)
-            print(f"✅ Successfully shared on Bluesky: {acc['handle']}")
-        except Exception as e:
-            print(f"❌ Error sharing on {acc['handle']}: {e}")
+            print(f"✅ Shared on {acc['handle']}")
+        except Exception as e: print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
-    print("Checking for new posts to share...")
-    title, link = get_latest_blog_post()
-    if title and link:
-        # هنا يمكنك إضافة نظام بسيط للتأكد أن المقال لم ينشر من قبل (مثلاً حفظ الرابط في ملف نصي)
-        post_to_bluesky(title, link)
+    title, link = get_latest_post()
+    
+    # التأكد لو الرابط اتنشر قبل كدا ولا لا
+    last_link = ""
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "r") as f: last_link = f.read().strip()
+
+    if link and link != last_link:
+        post_to_bsky(title, link)
+        # حفظ الرابط الجديد في الذاكرة
+        with open(CACHE_FILE, "w") as f: f.write(link)
     else:
-        print("No new post found to share.")
+        print("☕ No new articles found since last share.")
