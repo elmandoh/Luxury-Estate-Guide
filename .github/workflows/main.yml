@@ -2,7 +2,7 @@ name: Auto Post to Blogger
 on:
   schedule:
     - cron: '0 */6 * * *' # يشتغل كل 6 ساعات
-  workflow_dispatch: # للتشغيل اليدوي وقت ما تحب
+  workflow_dispatch: # للتشغيل اليدوي
 
 jobs:
   build:
@@ -18,10 +18,12 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install google-generativeai google-api-python-client requests
+          pip install google-generativeai
 
       - name: Run Script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          BLOGGER_ID: ${{ secrets.BLOGGER_ID }}
+          BLOGGER_EMAIL: ${{ secrets.BLOGGER_EMAIL }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
         run: python main.py
