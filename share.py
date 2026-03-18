@@ -3,12 +3,11 @@ import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
-# الإعدادات من السيكرتس
+# الإعدادات
 BSKY_ACCOUNTS = [
     {"handle": os.getenv("BSKY_HANDLE_1"), "password": os.getenv("BSKY_PASSWORD_1")},
     {"handle": os.getenv("BSKY_HANDLE_2"), "password": os.getenv("BSKY_PASSWORD_2")}
 ]
-
 BLOG_RSS_URL = "https://luxuryestateguide.blogspot.com/feeds/posts/default?alt=rss"
 CACHE_FILE = "last_post.txt"
 
@@ -25,31 +24,38 @@ def post_to_bsky(title, link):
     for acc in BSKY_ACCOUNTS:
         if not acc['handle'] or not acc['password']: continue
         try:
-            session = requests.post("https://bsky.social/xrpc/com.atproto.server.createSession",
-                                    json={"identifier": acc['handle'], "password": acc['password']}).json()
-            headers = {"Authorization": f"Bearer {session['accessJwt']}"}
+            # 1. تسجيل الدخول
+            res = requests.post("https://bsky.social/xrpc/com.atproto.server.createSession",
+                                json={"identifier": acc['handle'], "password": acc['password']}).json()
+            headers = {"Authorization": f"Bearer {res['accessJwt']}"}
+            
+            # 2. إنشاء البوست مع "External Embed" لحل مشكلة المعاينة والضغط
             post_data = {
-                "repo": session['did'], "collection": "app.bsky.feed.post",
+                "repo": res['did'],
+                "collection": "app.bsky.feed.post",
                 "record": {
-                    "text": f"🚨 New Viral Post: {title}\n\nRead more:\n{link}",
-                    "createdAt": datetime.utcnow().isoformat() + "Z"
+                    "text": f"🚨 {title}\n\nRead the full report on our blog!",
+                    "createdAt": datetime.utcnow().isoformat() + "Z",
+                    "embed": {
+                        "$type": "app.bsky.embed.external",
+                        "external": {
+                            "uri": link,
+                            "title": title,
+                            "description": "Latest US Real Estate & Economy Updates 2026"
+                        }
+                    }
                 }
             }
             requests.post("https://bsky.social/xrpc/com.atproto.repo.createRecord", json=post_data, headers=headers)
-            print(f"✅ Shared on {acc['handle']}")
+            print(f"✅ Shared with Preview on {acc['handle']}")
         except Exception as e: print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
     title, link = get_latest_post()
-    
-    # التأكد لو الرابط اتنشر قبل كدا ولا لا
     last_link = ""
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as f: last_link = f.read().strip()
 
     if link and link != last_link:
         post_to_bsky(title, link)
-        # حفظ الرابط الجديد في الذاكرة
         with open(CACHE_FILE, "w") as f: f.write(link)
-    else:
-        print("☕ No new articles found since last share.")
