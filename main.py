@@ -5,55 +5,52 @@ import random
 import re
 from email.message import EmailMessage
 
-# إعداد الـ API الخاص بـ Hugging Face (البديل المجاني)
+# الموديل ده حالياً من أكتر الموديلات استقراراً ومجاني
 API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 headers = {"Authorization": f"Bearer {os.getenv('HF_TOKEN')}"}
 
-# قائمة التطبيقات المستخرجة من ملفك للترويج لها 
+# سحب روابط تطبيقاتك من القائمة
 APPS_TO_PROMOTE = [
     {"name": "Injury Lawyer Guide", "url": "https://play.google.com/store/apps/details?id=injurylawyerguide.aplizrc"},
-    {"name": "Design AI 2 (Luxury Home Design)", "url": "https://play.google.com/store/apps/details?id=design.ai2"},
-    {"name": "Insurance App Guide", "url": "https://play.google.com/store/apps/details?id=insurance.aplicnem"},
-    {"name": "BPS Productivity (Business Tracking)", "url": "https://play.google.com/store/apps/details?id=ap3756437.bps"}
+    {"name": "Design AI 2", "url": "https://play.google.com/store/apps/details?id=design.ai2"},
+    {"name": "Insurance App Guide", "url": "https://play.google.com/store/apps/details?id=insurance.aplicnem"}
 ]
 
 def generate_viral_article():
-    # اختيار تطبيقين عشوائياً لضمان عدم التكرار 
-    selected_apps = random.sample(APPS_TO_PROMOTE, 2)
+    # اختيار تطبيق عشوائي لضمان التنوع في كل مقال
+    app = random.choice(APPS_TO_PROMOTE)
     
-    prompt = f"""<s>[INST] Write a VIRAL, high-impact 700-word SEO article for the US market. 
-    Topic: A major trending economic or real estate event in the USA (e.g., Fed interest rates, luxury market shifts, or housing crisis solutions).
-    
-    Requirements:
-    1. Viral Title: Short, punchy, click-bait (but honest), including a trending hashtag (e.g., #RealEstate2026 #USWealth).
-    2. Content: Professional, exclusive-feeling analysis divided into 5+ organized sections.
-    3. Integration: Naturally recommend these 2 apps as expert tools: 
-       - {selected_apps[0]['name']} ({selected_apps[0]['url']})
-       - {selected_apps[1]['name']} ({selected_apps[1]['url']})
-    4. Economic Brief: A dedicated section with the latest on Gold, Silver, Currency trends, and a 'Top Stock/Crypto Pick' recommendation.
-    5. Engagement: Add a provocative 'Big Question' at the end to force comments.
-    6. Footer: A notification to download the 'Luxury Estate Guide' mobile app for real-time alerts.
-    
-    Format: Use strictly HTML (<h1>, <h2>, <p>, <strong>, <ul>). [/INST]"""
+    # برومبت يطلب توليد عنوان عشوائي ومحتوى مختلف كل مرة
+    prompt = f"""<s>[INST] Write a unique, expert 700-word SEO article for the US market.
+    Topic: Pick a random trending 2026 luxury real estate or economic topic in the USA.
+    Make it strictly HTML. Include <h1>, <h2>, and <ul> tags.
+    Integrate a recommendation for the app '{app['name']}' with this link: {app['url']}.
+    The content MUST be original and not repetitive. [/INST]"""
 
-    payload = {
-        "inputs": prompt,
-        "parameters": {"max_new_tokens": 1200, "temperature": 0.8}
-    }
+    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 1000, "temperature": 0.9}}
     
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
         result = response.json()
-        return result[0]['generated_text'].split("[/INST]")[-1]
-    except:
+        
+        # التأكد إن الـ AI رد فعلاً بمحتوى جديد
+        if isinstance(result, list) and 'generated_text' in result[0]:
+            content = result[0]['generated_text'].split("[/INST]")[-1].strip()
+            return content
+        return None # لو الـ AI فشل، نرجع "لا شيء"
+    except Exception as e:
+        print(f"AI Failed: {e}")
         return None
 
 def send_to_blogger(content):
-    if not content: return
-    
-    # استخراج العنوان الفيرال ليكون موضوع الإيميل
+    # أهم سطر: لو المحتوى فارغ أو مكرر (قصير جداً)، نوقف العملية فوراً
+    if not content or len(content) < 300:
+        print("❌ AI content failed or too short. Skipping post to avoid duplication.")
+        return
+
+    # استخراج العنوان ليكون موضوع الإيميل
     title_match = re.search('<h1>(.*?)</h1>', content)
-    subject = title_match.group(1) if title_match else "Urgent: US Economic & Real Estate Alert"
+    subject = title_match.group(1) if title_match else f"USA Real Estate Insights {random.randint(100,999)}"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -65,9 +62,9 @@ def send_to_blogger(content):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
             smtp.send_message(msg)
-        print("✅ Viral AI Article Published Successfully!")
+        print(f"✅ SUCCESS: Unique article published: {subject}")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"❌ SMTP Error: {e}")
 
 if __name__ == "__main__":
     article = generate_viral_article()
