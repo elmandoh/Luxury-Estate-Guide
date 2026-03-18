@@ -5,11 +5,10 @@ import random
 import re
 from email.message import EmailMessage
 
-# الإعدادات المحدثة لعام 2026
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_KEY = os.getenv("GROQ_API_KEY")
 
-# القائمة الكاملة لتطبيقاتك الـ 20 من ملفك 
+# القائمة الكاملة من ملفك لضمان الترويج لجميع منتجاتك 
 APPS = [
     {"name": "Smart IPTV Player", "url": "https://play.google.com/store/apps/details?id=asd.iptvplayer"},
     {"name": "ASD 26", "url": "https://play.google.com/store/apps/details?id=com.eslamegyp.asd26"},
@@ -37,30 +36,37 @@ def generate_viral_article():
     app = random.choice(APPS)
     headers = {"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"}
     
-    # استخدام الموديل الجديد لضمان العمل
+    # برومبت هجومي لضمان الروابط والطول والتنسيق
+    prompt = f"""Write a VIRAL 900-word SEO blog post for US readers. 
+    Topic: High-impact 2026 US Real Estate or Economic Trend.
+    
+    STRICT STRUCTURE:
+    1. Viral H1 Title with #HashTag.
+    2. Compelling Introduction.
+    3. 5 Detailed Sections (H2) with expert analysis.
+    4. PROMOTION: You MUST include this clickable HTML link as a professional recommendation: <a href='{app['url']}'>{app['name']}</a>. Make it look like expert advice.
+    5. DATA TABLE: An HTML table showing current Gold, Silver, and Top Stock prices.
+    6. ENGAGEMENT: A controversial question for the comments section.
+    7. FOOTER: A bold red alert: 'STAY UPDATED! Download our Luxury Estate Guide mobile app now for real-time notifications.'
+    
+    Format: Use ONLY professional HTML tags."""
+
     data = {
-        "model": "llama-3.3-70b-versatile", 
-        "messages": [
-            {"role": "system", "content": "You are a US Economy & Real Estate viral journalist. Write uniquely."},
-            {"role": "user", "content": f"Find a trending US Real Estate topic for March 2026. Write a VIRAL 800-word SEO article in HTML. Include Gold/Silver prices. Promote this app naturally: {app['name']} ({app['url']}). End with a question. Footer: Download 'Luxury Estate Guide' for alerts."}
-        ],
-        "temperature": 0.9
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.85
     }
 
     try:
-        response = requests.post(GROQ_API_URL, headers=headers, json=data, timeout=90)
-        res_json = response.json()
-        return res_json['choices'][0]['message']['content']
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
+        response = requests.post(GROQ_API_URL, headers=headers, json=data, timeout=120)
+        return response.json()['choices'][0]['message']['content']
+    except: return None
 
 def send_to_blogger(content):
-    if not content or len(content) < 1500: # حماية من المحتوى الضعيف
-        return
+    if not content or len(content) < 2000: return
 
     title_match = re.search('<h1>(.*?)</h1>', content)
-    subject = title_match.group(1) if title_match else f"Viral Market Update {random.randint(100, 999)}"
+    subject = title_match.group(1) if title_match else f"Market Report {random.randint(100, 999)}"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -71,7 +77,7 @@ def send_to_blogger(content):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
         smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
         smtp.send_message(msg)
-    print(f"✅ SUCCESS: {subject}")
+    print(f"✅ Success: {subject}")
 
 if __name__ == "__main__":
     article = generate_viral_article()
