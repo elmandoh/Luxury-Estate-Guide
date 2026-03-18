@@ -1,8 +1,8 @@
 name: Auto Post to Blogger
 on:
   schedule:
-    - cron: '0 */6 * * *' # يشتغل كل 6 ساعات
-  workflow_dispatch: # للتشغيل اليدوي
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
