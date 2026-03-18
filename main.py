@@ -5,56 +5,66 @@ import random
 import re
 from email.message import EmailMessage
 
-# موديل Mistral هو الأفضل حالياً للمقالات الطويلة والحصرية
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+# الموديل الأسرع والأكثر استقراراً حالياً
+API_URL = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct"
 headers = {"Authorization": f"Bearer {os.getenv('HF_TOKEN')}"}
 
-# لستة التطبيقات الـ 20 لترويجها بشكل متنوع
+# قائمة تطبيقاتك الـ 20 كاملة لترويج متنوع 
 APPS = [
+    {"name": "Smart IPTV Player", "url": "https://play.google.com/store/apps/details?id=asd.iptvplayer"},
+    {"name": "ASD 26", "url": "https://play.google.com/store/apps/details?id=com.eslamegyp.asd26"},
     {"name": "Injury Lawyer Guide", "url": "https://play.google.com/store/apps/details?id=injurylawyerguide.aplizrc"},
+    {"name": "Quick ToolsHub", "url": "https://play.google.com/store/apps/details?id=quick.toolshub"},
+    {"name": "Smart IPTV Viewer", "url": "https://play.google.com/store/apps/details?id=smart.iptvviewer"},
+    {"name": "Fast Lite Web Browser", "url": "https://play.google.com/store/apps/details?id=fast.litewebbrowser"},
+    {"name": "NoteEye", "url": "https://play.google.com/store/apps/details?id=noteeye.ayzi"},
+    {"name": "QR App Muq", "url": "https://play.google.com/store/apps/details?id=qr.appmuq"},
+    {"name": "K-Cafe Finder", "url": "https://play.google.com/store/apps/details?id=kcafe.finder"},
     {"name": "Design AI 2", "url": "https://play.google.com/store/apps/details?id=design.ai2"},
+    {"name": "BPS Productivity", "url": "https://play.google.com/store/apps/details?id=ap3756437.bps"},
+    {"name": "TV App Ape", "url": "https://play.google.com/store/apps/details?id=tv.appape"},
+    {"name": "QR Scanner 377", "url": "https://play.google.com/store/apps/details?id=qr.scanner377"},
+    {"name": "SmartSync Hub", "url": "https://play.google.com/store/apps/details?id=smartsync.hub"},
+    {"name": "ConnectSphere", "url": "https://play.google.com/store/apps/details?id=connectsphere.aczh"},
     {"name": "Insurance App Guide", "url": "https://play.google.com/store/apps/details?id=insurance.aplicnem"},
-    {"name": "Smart IPTV Player", "url": "https://play.google.com/store/apps/details?id=asd.iptvplayer"}
-    # يمكنك إضافة بقية الـ 20 هنا بنفس التنسيق
+    {"name": "Digital CV Share", "url": "https://play.google.com/store/apps/details?id=digital.cvshare"},
+    {"name": "Al Hilal Fans", "url": "https://play.google.com/store/apps/details?id=al.hilalfans"},
+    {"name": "Toolify Daily Monitor", "url": "https://play.google.com/store/apps/details?id=toolify.dailytoolsusagemonitor"},
+    {"name": "DHO Productivity", "url": "https://play.google.com/store/apps/details?id=app3514831.dho"}
 ]
 
 def generate_viral_article():
     selected_app = random.choice(APPS)
     
-    # برومبت تفصيلي لضمان الطول والحصرية والتفاعل
-    prompt = f"""<s>[INST] Write a VIRAL 800-word SEO blog post for a US audience.
-    Topic: A random trending 2026 economic or luxury real estate event in the USA.
-    
-    Structure:
-    1. Viral Title (H1) with a hashtag.
-    2. Deep Analysis (4+ Sections with H2).
-    3. Naturally recommend this app: {selected_app['name']} ({selected_app['url']}).
-    4. Economic Insight: Latest on Gold, Silver, and a 'Top Stock' pick.
-    5. Engagement: A controversial question for comments.
-    6. Footer: Remind readers to download the 'Luxury Estate Guide' mobile app.
+    # البرومبت اللي بيطلع مقال "وحش"
+    prompt = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+    You are an expert US Real Estate and Economy journalist. Write a viral, 800-word SEO article in HTML format.
+    <|start_header_id|>user<|end_header_id|>
+    Topic: High-impact 2026 US Economy or Real Estate trends.
+    Structure: Viral H1 title with hashtag, 5 sections with H2, Economic Brief (Gold/Silver/Stocks), Engagement Question, and a footer alert for the 'Luxury Estate Guide' app.
+    Promotion: Recommend this app naturally: {selected_app['name']} ({selected_app['url']}).
+    <|start_header_id|>assistant<|end_header_id|>"""
 
-    Formatting: Use ONLY HTML tags (<h1>, <h2>, <p>, <ul>, <li>, <strong>). [/INST]"""
-
-    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 1200, "temperature": 0.85}}
+    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 1000, "temperature": 0.7, "top_p": 0.9}}
     
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=90)
         result = response.json()
-        if isinstance(result, list) and 'generated_text' in result[0]:
-            return result[0]['generated_text'].split("[/INST]")[-1].strip()
+        if isinstance(result, list):
+            return result[0]['generated_text'].split("<|end_header_id|>")[-1].strip()
         return None
     except Exception as e:
-        print(f"AI Failure: {e}")
+        print(f"AI Error: {e}")
         return None
 
 def send_to_blogger(content):
-    # فحص صارم: لو المقال قصير جداً (أقل من 400 كلمة) مش هيتنشر حفاظاً على جودة المدونة
-    if not content or len(content) < 1500: 
-        print("❌ Content too short or failed. Skipping to prevent duplicate/thin content.")
+    # فحصنا الذكي عشان المحتوى المكرر
+    if not content or len(content) < 800:
+        print("❌ AI content failed or too short. Skipping.")
         return
 
     title_match = re.search('<h1>(.*?)</h1>', content)
-    subject = title_match.group(1) if title_match else f"USA Market Alert {random.randint(1000, 9999)}"
+    subject = title_match.group(1) if title_match else f"Market Report {random.randint(100, 999)}"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -62,13 +72,10 @@ def send_to_blogger(content):
     msg['To'] = os.getenv("BLOGGER_EMAIL")
     msg.set_content(content, subtype='html')
 
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
-            smtp.send_message(msg)
-        print(f"✅ Article Published: {subject}")
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
+        smtp.send_message(msg)
+    print(f"✅ Article Published: {subject}")
 
 if __name__ == "__main__":
     article = generate_viral_article()
