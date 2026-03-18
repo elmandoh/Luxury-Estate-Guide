@@ -2,6 +2,7 @@ import os
 import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime
+from atproto import Client, client_utils # ضيف دي فوق
 
 # الإعدادات
 BSKY_ACCOUNTS = [
@@ -20,35 +21,36 @@ def get_latest_post():
             return item.find('title').text, item.find('link').text
     except: return None, None
 
+
 def post_to_bsky(title, link):
     for acc in BSKY_ACCOUNTS:
         if not acc['handle'] or not acc['password']: continue
         try:
-            # 1. تسجيل الدخول
-            res = requests.post("https://bsky.social/xrpc/com.atproto.server.createSession",
-                                json={"identifier": acc['handle'], "password": acc['password']}).json()
-            headers = {"Authorization": f"Bearer {res['accessJwt']}"}
-            
-            # 2. إنشاء البوست مع "External Embed" لحل مشكلة المعاينة والضغط
-            post_data = {
-                "repo": res['did'],
-                "collection": "app.bsky.feed.post",
-                "record": {
-                    "text": f"🚨 {title}\n\nRead the full report on our blog!",
-                    "createdAt": datetime.utcnow().isoformat() + "Z",
-                    "embed": {
-                        "$type": "app.bsky.embed.external",
-                        "external": {
-                            "uri": link,
-                            "title": title,
-                            "description": "Latest US Real Estate & Economy Updates 2026"
-                        }
-                    }
-                }
-            }
-            requests.post("https://bsky.social/xrpc/com.atproto.repo.createRecord", json=post_data, headers=headers)
-            print(f"✅ Shared with Preview on {acc['handle']}")
-        except Exception as e: print(f"❌ Error: {e}")
+            client = Client()
+            client.login(acc['handle'], acc['password'])
+
+            # 1. بناء النص والهاشتاجات بشكل تفاعلي
+            tb = client_utils.TextBuilder()
+            tb.text(f"🚨 {title}\n\n")
+            tb.tag("#RealEstate", "RealEstate") # الهاشتاج هينور أزرق هنا
+            tb.text(" ")
+            tb.tag("#USA", "USA")
+            tb.text("\n\nRead more here:")
+
+            # 2. إرسال البوست مع الـ Embed (المعاينة) والـ TextBuilder
+            client.send_post(
+                text=tb,
+                embed=models.AppBskyEmbedExternal.Main(
+                    external=models.AppBskyEmbedExternal.External(
+                        uri=link,
+                        title=title,
+                        description="Latest US Real Estate & Economy Updates 2026",
+                    )
+                )
+            )
+            print(f"✅ Shared with Blue Tags on {acc['handle']}")
+        except Exception as e: 
+            print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
     title, link = get_latest_post()
