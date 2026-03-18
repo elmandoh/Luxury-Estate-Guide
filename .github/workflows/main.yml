@@ -2,8 +2,8 @@ name: Auto Post to Blogger
 
 on:
   schedule:
-    # النشر كل 4 ساعات (00, 04, 08, 12, 16, 20 بتوقيت UTC)
-    - cron: '0 */4 * * *'
+    - cron: '0 */4 * * *'  # النشر التلقائي كل 4 ساعات
+  workflow_dispatch:        # السطر ده هو اللي بيرجع زرار الـ Run اليدوي
 jobs:
   build:
     runs-on: ubuntu-latest
