@@ -8,7 +8,7 @@ BSKY_ACCOUNTS = [
     {"handle": os.getenv("BSKY_HANDLE_2"), "password": os.getenv("BSKY_PASSWORD_2")}
 ]
 
-# رابط التغذية (RSS) لمدونتك للحصول على أحدث مقال
+# رابط التغذية (RSS) لمدونتك
 BLOG_RSS_URL = "https://luxuryestateguide.blogspot.com/feeds/posts/default?alt=rss"
 
 def get_latest_blog_post():
