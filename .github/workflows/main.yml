@@ -1,10 +1,9 @@
 name: Auto Post to Blogger
 
 on:
-  workflow_dispatch: # تشغيل يدوي
   schedule:
-    - cron: '0 */6 * * *' # تشغيل تلقائي كل 6 ساعات
-
+    # النشر كل 4 ساعات (00, 04, 08, 12, 16, 20 بتوقيت UTC)
+    - cron: '0 */4 * * *'
 jobs:
   build:
     runs-on: ubuntu-latest
