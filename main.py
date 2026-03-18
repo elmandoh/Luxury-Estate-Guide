@@ -5,66 +5,61 @@ import random
 import re
 from email.message import EmailMessage
 
-# الموديل الأسرع والأكثر استقراراً حالياً
-API_URL = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct"
+# استخدام موديل Qwen المتطور لضمان سرعة الاستجابة وكفاءة المحتوى
+API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-72B-Instruct"
 headers = {"Authorization": f"Bearer {os.getenv('HF_TOKEN')}"}
 
-# قائمة تطبيقاتك الـ 20 كاملة لترويج متنوع 
+# قائمة التطبيقات الكاملة (سيتم اختيار واحد عشوائياً في كل مرة) 
 APPS = [
     {"name": "Smart IPTV Player", "url": "https://play.google.com/store/apps/details?id=asd.iptvplayer"},
     {"name": "ASD 26", "url": "https://play.google.com/store/apps/details?id=com.eslamegyp.asd26"},
     {"name": "Injury Lawyer Guide", "url": "https://play.google.com/store/apps/details?id=injurylawyerguide.aplizrc"},
-    {"name": "Quick ToolsHub", "url": "https://play.google.com/store/apps/details?id=quick.toolshub"},
-    {"name": "Smart IPTV Viewer", "url": "https://play.google.com/store/apps/details?id=smart.iptvviewer"},
-    {"name": "Fast Lite Web Browser", "url": "https://play.google.com/store/apps/details?id=fast.litewebbrowser"},
-    {"name": "NoteEye", "url": "https://play.google.com/store/apps/details?id=noteeye.ayzi"},
-    {"name": "QR App Muq", "url": "https://play.google.com/store/apps/details?id=qr.appmuq"},
-    {"name": "K-Cafe Finder", "url": "https://play.google.com/store/apps/details?id=kcafe.finder"},
     {"name": "Design AI 2", "url": "https://play.google.com/store/apps/details?id=design.ai2"},
-    {"name": "BPS Productivity", "url": "https://play.google.com/store/apps/details?id=ap3756437.bps"},
-    {"name": "TV App Ape", "url": "https://play.google.com/store/apps/details?id=tv.appape"},
-    {"name": "QR Scanner 377", "url": "https://play.google.com/store/apps/details?id=qr.scanner377"},
-    {"name": "SmartSync Hub", "url": "https://play.google.com/store/apps/details?id=smartsync.hub"},
-    {"name": "ConnectSphere", "url": "https://play.google.com/store/apps/details?id=connectsphere.aczh"},
     {"name": "Insurance App Guide", "url": "https://play.google.com/store/apps/details?id=insurance.aplicnem"},
-    {"name": "Digital CV Share", "url": "https://play.google.com/store/apps/details?id=digital.cvshare"},
-    {"name": "Al Hilal Fans", "url": "https://play.google.com/store/apps/details?id=al.hilalfans"},
-    {"name": "Toolify Daily Monitor", "url": "https://play.google.com/store/apps/details?id=toolify.dailytoolsusagemonitor"},
-    {"name": "DHO Productivity", "url": "https://play.google.com/store/apps/details?id=app3514831.dho"}
+    {"name": "Quick ToolsHub", "url": "https://play.google.com/store/apps/details?id=quick.toolshub"}
+    # يمكنك إضافة بقية القائمة هنا 
 ]
 
-def generate_viral_article():
+def generate_viral_content():
     selected_app = random.choice(APPS)
     
-    # البرومبت اللي بيطلع مقال "وحش"
-    prompt = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-    You are an expert US Real Estate and Economy journalist. Write a viral, 800-word SEO article in HTML format.
-    <|start_header_id|>user<|end_header_id|>
-    Topic: High-impact 2026 US Economy or Real Estate trends.
-    Structure: Viral H1 title with hashtag, 5 sections with H2, Economic Brief (Gold/Silver/Stocks), Engagement Question, and a footer alert for the 'Luxury Estate Guide' app.
-    Promotion: Recommend this app naturally: {selected_app['name']} ({selected_app['url']}).
-    <|start_header_id|>assistant<|end_header_id|>"""
+    # أوامر دقيقة للموديل لضمان الطول والجودة وتجنب الفشل
+    prompt = f"""Write a professional 700-word SEO viral article for a US audience about 'High-ROI Real Estate Opportunities 2026'.
+    Format strictly in HTML. Include:
+    - Viral H1 title with a hashtag (e.g., #Wealth2026).
+    - Detailed sections (H2) about market trends, Gold/Silver prices, and top stock picks.
+    - Naturally recommend this app as a professional tool: {selected_app['name']} ({selected_app['url']}).
+    - A 'Big Question' at the end to encourage comments.
+    - Footer: Alert to download 'Luxury Estate Guide' mobile app for updates.
+    Make it expert, persuasive, and exclusive."""
 
-    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 1000, "temperature": 0.7, "top_p": 0.9}}
+    payload = {
+        "inputs": prompt,
+        "parameters": {"max_new_tokens": 1500, "temperature": 0.8, "return_full_text": False}
+    }
     
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=90)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
         result = response.json()
-        if isinstance(result, list):
-            return result[0]['generated_text'].split("<|end_header_id|>")[-1].strip()
+        
+        if isinstance(result, list) and 'generated_text' in result[0]:
+            return result[0]['generated_text'].strip()
+        elif isinstance(result, dict) and 'generated_text' in result:
+            return result['generated_text'].strip()
         return None
     except Exception as e:
-        print(f"AI Error: {e}")
+        print(f"Error calling AI: {e}")
         return None
 
 def send_to_blogger(content):
-    # فحصنا الذكي عشان المحتوى المكرر
-    if not content or len(content) < 800:
-        print("❌ AI content failed or too short. Skipping.")
+    # تم تقليل حد الفحص قليلاً لضمان مرور المقالات الجيدة (600 حرف كحد أدنى للبدء)
+    if not content or len(content) < 600:
+        print("❌ AI Content too short. Retrying in next schedule.")
         return
 
-    title_match = re.search('<h1>(.*?)</h1>', content)
-    subject = title_match.group(1) if title_match else f"Market Report {random.randint(100, 999)}"
+    # محاولة استخراج العنوان
+    title_search = re.search('<h1>(.*?)</h1>', content)
+    subject = title_search.group(1) if title_search else f"Exclusive US Market Update {random.randint(100, 999)}"
 
     msg = EmailMessage()
     msg['Subject'] = subject
@@ -72,11 +67,14 @@ def send_to_blogger(content):
     msg['To'] = os.getenv("BLOGGER_EMAIL")
     msg.set_content(content, subtype='html')
 
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
-        smtp.send_message(msg)
-    print(f"✅ Article Published: {subject}")
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
+            smtp.send_message(msg)
+        print(f"✅ Article Published: {subject}")
+    except Exception as e:
+        print(f"❌ Email Error: {e}")
 
 if __name__ == "__main__":
-    article = generate_viral_article()
+    article = generate_viral_content()
     send_to_blogger(article)
