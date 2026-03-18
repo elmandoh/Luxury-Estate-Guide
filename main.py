@@ -1,41 +1,42 @@
 import os
+import smtplib
+from email.message import EmailMessage
 import google.generativeai as genai
-import requests
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
 
-# 1. إعدادات الذكاء الاصطناعي (Gemini)
+# إعداد Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-def rewrite_with_gemini(original_text):
-    prompt = f"""
-    Rewrite the following real estate news for a high-end US audience. 
-    Focus on investment ROI, luxury features, and market trends. 
-    Make it SEO-friendly for the USA market. 
-    Original Text: {original_text}
+def generate_luxury_article():
+    # برومبت احترافي لجذب الزوار الأمريكيين
+    prompt = """
+    Write a high-end, SEO-optimized blog post for luxury real estate investors in the USA.
+    Topic: Why 2026 is the best year to invest in Florida and Texas mansions.
+    - Title should be catchy (e.g., The Billionaire's Guide to 2026 Real Estate).
+    - Use professional, engaging English.
+    - Include H2 headings and a list of investment benefits.
+    - Use HTML tags like <h2>, <p>, and <ul> for formatting.
     """
     response = model.generate_content(prompt)
     return response.text
 
-# 2. جلب محتوى (مثال سحب من RSS أو رابط محدد)
-def get_content():
-    # هنا ممكن تحط رابط RSS Feed لموقع Mansion Global أو غيره
-    # للتبسيط، هنفترض إننا بنسحب "عنوان" و "محتوى"
-    sample_title = "Luxury Real Estate Market in Florida 2026"
-    sample_body = "The market is seeing a huge rise in waterfront properties..."
-    return sample_title, sample_body
+def send_to_blogger(content):
+    # تفاصيل الإيميل من الـ Secrets اللي أنت لسه ضايفها
+    msg = EmailMessage()
+    msg['Subject'] = "Luxury Estate Investment Trends 2026"  # عنوان الرسالة
+    msg['From'] = os.getenv("SENDER_EMAIL")
+    msg['To'] = os.getenv("BLOGGER_EMAIL")
+    msg.set_content(content, subtype='html')
 
-# 3. النشر على بلوجر
-def post_to_blogger(title, content):
-    blog_id = os.getenv("BLOGGER_ID")
-    # إعداد الـ API الخاص ببلوجر
-    # يحتاج لمكتبة google-api-python-client
-    # (هنا نستخدم طلب POST مباشر للتبسيط أو المكتبة الرسمية)
-    print(f"Posting to Blogger: {title}")
-    # كود النشر الفعلي يوضع هنا باستخدام Blogger API v3
+    try:
+        # الاتصال بسيرفر جوجل لإرسال الإيميل
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(os.getenv("SENDER_EMAIL"), os.getenv("SENDER_PASSWORD"))
+            smtp.send_message(msg)
+        print("✅ Success! Article sent to Blogger.")
+    except Exception as e:
+        print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
-    title, body = get_content()
-    new_content = rewrite_with_gemini(body)
-    post_to_blogger(title, new_content)
+    article = generate_luxury_article()
+    send_to_blogger(article)
