@@ -1,0 +1,27 @@
+name: Auto Post to Blogger
+on:
+  schedule:
+    - cron: '0 */6 * * *' # يشتغل كل 6 ساعات
+  workflow_dispatch: # للتشغيل اليدوي وقت ما تحب
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          pip install google-generativeai google-api-python-client requests
+
+      - name: Run Script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOGGER_ID: ${{ secrets.BLOGGER_ID }}
+        run: python main.py
